@@ -1,0 +1,17 @@
+{
+  "name": "js13k",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.coffee",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chris Subagio",
+  "license": "Reserved",
+  "dependencies": {
+    "coffee-script": "^1.10.0",
+    "jszip": "^3.1.2",
+    "pug": "^2.0.0-beta6",
+    "uglify-js": "^2.7.3"
+  }
+}

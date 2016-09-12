@@ -1,0 +1,25 @@
+doctype html
+html(lang='en')
+  head
+    title Neon Runner '84
+    meta(charset="utf-8")
+    style.
+      body{padding:0;margin:0;background:#160b29;overflow:hidden;}
+      #b{display:block;max-width:100vw;max-height:96vh;margin:2vh auto;height:100vh;}
+      @keyframes d {0%{color:#d51aac;} 50%{color:#fc1dcc;} 100%{color:#d51aac;} }
+      #c{
+        position:absolute;bottom:5vh;left:50vw;width:70vh;margin-left:-35vh;box-sizing:border-box;
+        padding:0.5em;background:rgba(0,0,0,0.75);border-radius:2vh;
+        font:4.5vh monospace;color:#ff1fce;text-shadow:0 0 4px #d435ac;
+        border:2px solid #d435ac;transition:all 0.1s;
+        box-shadow:0 0 8px #ff1fce;
+        animation-name:d;animation-duration:1s;animation-fill-mode:both;animation-iteration-count:infinite;
+      }
+      @keyframes g {0%{color:#651052;} 50%{color:#ff1fce;} 100%{color:#651052;} }
+      .f{margin-left:0.2em;
+        animation-name:g;animation-duration:0.3s;animation-fill-mode:both;animation-iteration-count:infinite;}
+  body
+    canvas#b
+    div#c
+    div#debug(style='color:#fff;position:absolute;bottom:0;right:0;font:12pt monospace;')
+    script !{js}

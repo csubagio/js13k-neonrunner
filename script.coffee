@@ -120,7 +120,7 @@ presentProg = program "
     varying vec4 u;
     void main() {
       gl_FragColor=texture2D(s,u.xy);
-      gl_FragColor.rgb+=vec3(0.8,0.5,0.9)*smoothstep(0.98,1.0,sin(u.x-u.y*3.0-t*0.6));
+      gl_FragColor.rgb+=vec3(0.8,0.5,0.9)*smoothstep(0.98,1.0,sin(u.x-u.y*3.0-t*0.34));
       gl_FragColor.rgb*=gl_FragColor.a;
       float d=length(max(vec2(0.0),abs(u.zw)-vec2(0.8)))/0.2;
       d=smoothstep(0.9,1.0,d);
@@ -193,9 +193,9 @@ explodeProg = program "
     void main(){
       vec3 l;
       float a = t.y * 7.28;
-      l.x = sin(a) * p.x + cos(a) * p.y;
-      l.y = (cos(a) * p.x - sin(a) * p.y) * 0.75;
-      l.z = (p.z+0.5) * -15.0 * t.x;
+      l.x = sin(a) * p.x + cos(a) * p.y * 0.5;
+      l.y = (cos(a) * p.x - sin(a) * p.y * 0.5);
+      l.z = (p.z+0.2) * -15.0 * pow(t.x,1.6);
       float s=sin(p.z*3.14);
       float d=pow(t.x,0.6)*pow(s,2.0)*7.0;
       l.xy*=d;
@@ -204,7 +204,7 @@ explodeProg = program "
       gl_Position=vec4(l.xy-m.xy*div,l.z / 100.0,div);
       u.xy=l.xz;
       u.z=t.x;
-      u.w=p.z;
+      u.w=mod(p.z+t.x*2.3, 1.0);
       gl_PointSize=(0.2+s*s*s)*100.0/div;
     }
   ","
@@ -212,11 +212,11 @@ explodeProg = program "
     varying vec4 u;
     void main() {
       float a=smoothstep(0.1,0.2,u.y);
-      vec2 x=gl_PointCoord.xy;
+      vec2 x=gl_PointCoord.xy*2.0-1.0;
       if(u.w>0.5){x.y*=3.0+u.w-0.5;}
       else{x.x*=2.0+u.w;}
-      float d=max(abs(x.x-0.5),abs(x.y-0.5));
-      a*=smoothstep(0.5,0.5-u.z,d);
+      float d=max(abs(x.x),abs(x.y));
+      a*=smoothstep(1.0,1.0-u.z,d);
       gl_FragColor.rgb=mix(vec3(0.96,0.8,0.38),vec3(0.54,0.08,0.49),smoothstep(0.4,0.6,u.w))*a;
       gl_FragColor.w=a;
     }
@@ -562,9 +562,8 @@ gameStates =
   intro: 1
   freePlay: 2
   tutorial: 3
-  tutorial1: 4
 
-gameState = gameStates.pressStart
+gameState = gameStates.freePlay
 newState = true
 stateData = {}
 
@@ -751,9 +750,12 @@ frame = ->
   textContext.clearRect 0, 0, viewportWidth, viewportWidth
   switch gameState
     when gameStates.pressStart
+      if newState
+        t = 0
+
       playerX = lerp playerX, -0.1, 0.1
       playerY = lerp playerY, 0.6, 0.1
-      print viewportWidth/2, viewportWidth-textSize*2.2, pow(abs(sin(t*0.32)),4), "PRESS SPACE"
+      print viewportWidth/2, viewportWidth-textSize*2.2, pow(abs(sin(t*0.32)),4) * 2, "PRESS SPACE"
       print viewportWidth/2 + sin(t*0.06)*20, viewportWidth*0.16 + sin(t*0.12)*10, 1, "NEON"
       print viewportWidth/2 + sin(t*0.06+0.7)*20, viewportWidth*0.16 + textSize*0.8 + sin(t*0.12+0.5)*10, 1, "RUNNER '84"
       if bounced.fire
@@ -787,7 +789,7 @@ frame = ->
 
       switch stateData.step
         when 0
-          if doneDialog or stateData.time > 200
+          if doneDialog and stateData.time > 200
             stateData.time = 0
             resetDialog [ "use the damned arrow keys" ]
           if buttons.up or buttons.down or buttons.left or buttons.right
@@ -804,9 +806,13 @@ frame = ->
             stateData.time = 0
             stateData.count = 0
         when 2
+          if stateData.time > 400
+            resetDialog ["move your avatar into the corners, 8675309"]
+            stateData.time = 0
           for corner, index in [[-1,-1],[1,-1],[-1,1],[1,1]]
             if abs(playerX-corner[0]) + abs(playerY-corner[1]) < 0.2
               stateData.count |= 1 << index
+              stateData.time = 0
           if stateData.count == 15
             resetDialog ["hmm, a little tight. You'll manage"]
             stateData.step = 3
@@ -818,7 +824,7 @@ frame = ->
             stateData.step = 4
         when 4
           if stateData.time > 200
-            resetDialog ["press the spacebar, genius"]
+            resetDialog ["hold the spacebar, genius"]
             stateData.time = 0
           if buttons.fire
             stateData.count += 1

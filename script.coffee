@@ -429,7 +429,7 @@ print = (x, y, alpha, text) ->
   textContext.scale 1.1, 0.85
   textContext.globalAlpha = alpha
   textContext.textAlign = 'center'
-  textContext.font = "#{textSize}px futura, 'Trebuchet MS', Arial, sans-serif"
+  textContext.font = "#{textSize}px futura, 'Bauhaus 93', 'Trebuchet MS', Arial, sans-serif"
   textContext.textBaseline = "top"
 
   textContext.strokeStyle = '#a40690'

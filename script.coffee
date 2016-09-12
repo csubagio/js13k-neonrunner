@@ -857,6 +857,7 @@ frame = ->
           if doneDialog or stateData.time > 300
             resetDialog ["now test your data stream with the spacebar"]
             stateData.step = 4
+            stateData.time = 0
         when 4
           if stateData.time > 200
             resetDialog ["hold the spacebar, genius"]
@@ -883,7 +884,7 @@ frame = ->
             if stateData.count > 5
               resetDialog ["fine, good enough",
                 "I'm plotting a course to a server that has the upgrades you'll need",
-                "synchronize with the jump node to engage"]
+                "synchronize with the jump port to engage"]
               stateData.step = 8
             else
               stateData.count += 1

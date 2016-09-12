@@ -1,3 +1,5 @@
+![](neon-runner-logo.gif?raw=true)
+
 # Neon Runner '84
 
 This is a game made for the gamejam over at [http://2016.js13kgames.com](http://2016.js13kgames.com). Compressed in the zip file, the whole thing comes in at just under 13 kilobytes of data! The game is also hosted [here at Github](https://csubagio.github.io/js13k-neonrunner/).
@@ -15,3 +17,5 @@ WebGL is basically a dream to work with: pretty much everything worked as I'd im
 If you're lucky, Chrome will still playback the sound in this game the way I authored it back in Chrome v52. Whether it'll continue to work in the future is seriously anybody's guess. If it sounds like a cat being strangled by a tardis, then hit M in digust to disable sound all together. I'll see about making a soundless build with all audio code entirely disabled, to futureproof the project.
 
 Otherwise though, this was a *TON* of fun, and I'd recommend the jam to anyone who's into game development. Here's to JS13k 2017!
+
+*Hilarious irony note: the promo gif above is* **7 Mb** *, over 500 times the size of the game!* `¯\_(ツ)_/¯`

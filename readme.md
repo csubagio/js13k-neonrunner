@@ -1,3 +1,5 @@
+![game promo shot]('neon-runner-logo.gif')
+
 # Neon Runner '84
 
 This is a game made for the gamejam over at [http://2016.js13kgames.com](http://2016.js13kgames.com). Compressed in the zip file, the whole thing comes in at just under 13 kilobytes of data! The game is also hosted [here at Github](https://csubagio.github.io/js13k-neonrunner/).

@@ -17,3 +17,5 @@ WebGL is basically a dream to work with: pretty much everything worked as I'd im
 If you're lucky, Chrome will still playback the sound in this game the way I authored it back in Chrome v52. Whether it'll continue to work in the future is seriously anybody's guess. If it sounds like a cat being strangled by a tardis, then hit M in digust to disable sound all together. I'll see about making a soundless build with all audio code entirely disabled, to futureproof the project.
 
 Otherwise though, this was a *TON* of fun, and I'd recommend the jam to anyone who's into game development. Here's to JS13k 2017!
+
+*Note hilarious irony: the promo gif above is **7 Mb**, over 500 times the size of the game ¯\_(ツ)_/¯*

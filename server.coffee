@@ -20,17 +20,27 @@ server = http.createServer (req, res) ->
 
   data = { js: '' }
   try
-    js = coffee.compile fs.readFileSync('./script.coffee', 'utf8'), {bare: true}
-    if true
-      ugly = UglifyJS.minify { "script.js": js }, { fromString: true, mangle: { toplevel: true } }
-      data.js = ugly.code
-    else
-      data.js = js
+    data.js = coffee.compile fs.readFileSync('./script.coffee', 'utf8'), {bare: true}
+    ugly = UglifyJS.minify { "script.js": data.js }, { fromString: true, mangle: { toplevel: true } }
+    data.ugly = ugly.code
   catch e
     console.error e.toString()
 
+  serveUgly = false
+  if serveUgly
+    data.js = data.ugly
+
   html = template data
   res.end html
+
+  data.js = data.ugly
+  html = template data
+  fs.writeFileSync 'neonrunner84.html', html, 'utf8'
+
+  htmlFile = fs.openSync 'neonrunner84.html', 'r'
+  stat = fs.fstatSync htmlFile
+  fs.close htmlFile
+  console.log "html file updated: #{stat.size}bytes, #{Math.floor stat.size/1024}kb"
 
   zip = new JSZip();
   zip.file("neonrunner84.html", html, {compression: "DEFLATE", compressionOptions : {level:9}});

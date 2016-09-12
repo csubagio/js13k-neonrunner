@@ -184,6 +184,44 @@ starProg = program "
   "
 
 
+explodeProg = program "
+    attribute vec4 p;
+    uniform vec3 m;
+    uniform vec2 t;
+    uniform vec3 x;
+    varying vec4 u;
+    void main(){
+      vec3 l;
+      float a = t.y * 7.28;
+      l.x = sin(a) * p.x + cos(a) * p.y;
+      l.y = (cos(a) * p.x - sin(a) * p.y) * 0.75;
+      l.z = (p.z+0.5) * -15.0 * t.x;
+      float s=sin(p.z*3.14);
+      float d=pow(t.x,0.6)*pow(s,2.0)*7.0;
+      l.xy*=d;
+      l+=x*2.0;
+      float div=l.z*0.6+0.4;
+      gl_Position=vec4(l.xy-m.xy*div,l.z / 100.0,div);
+      u.xy=l.xz;
+      u.z=t.x;
+      u.w=p.z;
+      gl_PointSize=(0.2+s*s*s)*100.0/div;
+    }
+  ","
+    precision mediump float;
+    varying vec4 u;
+    void main() {
+      float a=smoothstep(0.1,0.2,u.y);
+      vec2 x=gl_PointCoord.xy;
+      if(u.w>0.5){x.y*=3.0+u.w-0.5;}
+      else{x.x*=2.0+u.w;}
+      float d=max(abs(x.x-0.5),abs(x.y-0.5));
+      a*=smoothstep(0.5,0.5-u.z,d);
+      gl_FragColor.rgb=mix(vec3(0.96,0.8,0.38),vec3(0.54,0.08,0.49),smoothstep(0.4,0.6,u.w))*a;
+      gl_FragColor.w=a;
+    }
+  "
+
 buffer = (verts) ->
   buf = gl.createBuffer()
   gl.bindBuffer gl.ARRAY_BUFFER, buf
@@ -228,17 +266,16 @@ for i in [0...800]
 
 starBuffer = buffer starBuffer
 
-persp = (fieldOfViewInRadians, aspectRatio, near, far) ->
-  f = 1.0 / Math.tan(fieldOfViewInRadians / 2)
-  rangeInv = 1.0 / (near - far)
-  return [
-    f / aspectRatio, 0,                          0,   0,
-    0,               f,                          0,   0,
-    0,               0,    (near + far) * rangeInv,  -1,
-    0,               0,  near * far * rangeInv * 2,   0
-  ]
+explodeBuffer = []
+for i in [0...100]
+  a = random() * PI * 2
+  d = pow( 0.1 + 0.9 * random(), 0.5 )
+  explodeBuffer.push cos(a) * d
+  explodeBuffer.push sin(a) * d
+  explodeBuffer.push random()
 
-gl.viewport 0, 0, viewportWidth, viewportWidth
+explodeBuffer = buffer explodeBuffer
+
 
 t = 0
 
@@ -247,7 +284,7 @@ playerY = 1
 playerZ = 0.8
 
 cam = [0,0,0]
-draw = (buf, prog, x, y, z, point) ->
+drawBuffer = (buf, prog, x, y, z, point) ->
   gl.bindBuffer gl.ARRAY_BUFFER, buf
   gl.enableVertexAttribArray 0
   gl.vertexAttribPointer 0, 3, gl.FLOAT, false, 0, 0
@@ -266,6 +303,24 @@ draw = (buf, prog, x, y, z, point) ->
     gl.drawArrays gl.POINTS, 0, buf.count
   else
     gl.drawArrays gl.TRIANGLES, 0, buf.count
+
+
+drawParticleBuffer = (buf, prog, x, y, z, age, seed) ->
+  gl.bindBuffer gl.ARRAY_BUFFER, buf
+  gl.enableVertexAttribArray 0
+  gl.vertexAttribPointer 0, 3, gl.FLOAT, false, 0, 0
+  gl.useProgram prog
+  p = gl.getUniformLocation prog, 'm'
+  gl.uniform3fv p, cam
+  p = gl.getUniformLocation prog, 't'
+  gl.uniform2f p, age, seed
+  p = gl.getUniformLocation prog, 'x'
+  gl.uniform3f p, x, y, z
+  gl.enable gl.BLEND
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+  gl.drawArrays gl.POINTS, 0, buf.count
+
+
 
 buttons =
   up: false
@@ -509,7 +564,7 @@ gameStates =
   tutorial: 3
   tutorial1: 4
 
-gameState = gameStates.tutorial
+gameState = gameStates.pressStart
 newState = true
 stateData = {}
 
@@ -591,29 +646,35 @@ updateTargets = ->
     tg.x += 0.1 * dx
     tg.y += 0.1 * dy
     tg.z += 0.1 * dz
-    draw quadBuffer, neon, tg.x, tg.y, tg.z
+    drawBuffer quadBuffer, neon, tg.x, tg.y, tg.z
     for bl in bullets
       dx = bl.x - tg.x
       dy = bl.y - tg.y
       dz = tg.z - bl.z
       if abs(dx) < 0.25 and abs(dy) < 0.25 and dz > 0 and dz <= 3
         tg.dead = true
+        particle tg.x, tg.y, tg.z, 0.7, explodeProg
         score += 10
 
   targets = (tg for tg in targets when not tg.dead)
 
 
 drawGame = ->
+  gl.depthMask false
   for i in bullets when i.on
     if i.z > 10
       i.on = false
     else
-      draw lazerBuffer, lazerProg, i.x, i.y, i.z
+      drawBuffer lazerBuffer, lazerProg, i.x, i.y, i.z
     i.z += 1
+  gl.depthMask true
 
-  draw quadBuffer, neon, playerX, playerY, playerZ
+  drawBuffer quadBuffer, neon, playerX, playerY, playerZ
 
+particles = []
 
+particle = (x, y, z, duration, program) ->
+  particles.push {duration: duration, age: 0, program:program, x:x, y:y, z:z, seed:random()}
 
 frame = ->
   if updatePaused
@@ -675,14 +736,15 @@ frame = ->
 
   cam = [playerX/3, playerY/2, 0]
 
+  gl.viewport 0, 0, viewportWidth, viewportWidth
   gl.clearColor 0.08, 0.04, 0.16, 1.0
   gl.depthFunc gl.LEQUAL
   gl.disable gl.CULL_FACE
   gl.clear gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT
 
   gl.disable gl.DEPTH_TEST
-  draw sunBuffer, sunProg, 0, 0, 0
-  draw starBuffer, starProg, 0, 0, 0, true
+  drawBuffer sunBuffer, sunProg, 0, 0, 0
+  drawBuffer starBuffer, starProg, 0, 0, 0, true
 
   gl.enable gl.DEPTH_TEST
 
@@ -698,10 +760,10 @@ frame = ->
         setState gameStates.intro
 
       for i in [0..12]
-        draw quadBuffer, neon, 0 + sin(t*0.1+i), -1 + abs(sin(t*0.1+i*0.5)), 12.4-i
-        draw quadBuffer, neon, 0 - sin(t*0.1+i), -1, 12.4-i
+        drawBuffer quadBuffer, neon, 0 + sin(t*0.1+i), -1 + abs(sin(t*0.1+i*0.5)), 12.4-i
+        drawBuffer quadBuffer, neon, 0 - sin(t*0.1+i), -1, 12.4-i
 
-      draw quadBuffer, neon, 0, 0.7, 0.4
+      drawBuffer quadBuffer, neon, 0, 0.7, 0.4
 
     when gameStates.intro
       if newState
@@ -752,11 +814,15 @@ frame = ->
             stateData.count = 0
         when 3
           if doneDialog or stateData.time > 300
-            resetDialog ["now test your data stream with the space key"]
+            resetDialog ["now test your data stream with the spacebar"]
             stateData.step = 4
         when 4
+          if stateData.time > 200
+            resetDialog ["press the spacebar, genius"]
+            stateData.time = 0
           if buttons.fire
             stateData.count += 1
+            stateData.time = 0
             if stateData.count > 200
               resetDialog ["you're kidding, right? You'll need to upgrade that
                 if you're going to stand a chance", "sigh",
@@ -806,12 +872,26 @@ frame = ->
       updateTargets()
       drawGame()
 
+  ###
+  if particles.length == 0
+    particle random() - 0.5, random() - 0.5, 8, 0.5 + 0.5 * random(), explodeProg
+  ###
+
+  gl.depthMask false
+  for part in particles
+    part.age += 0.016
+    if part.age >= part.duration
+      part.done = true
+    else
+      drawParticleBuffer explodeBuffer, part.program, part.x, part.y, part.z, part.age/part.duration, part.seed
+  particles = (p for p in particles when not p.done)
+  gl.depthMask true
 
   gl.disable gl.DEPTH_TEST
   gl.activeTexture gl.TEXTURE0
   gl.bindTexture gl.TEXTURE_2D, textTexture
   gl.texImage2D gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, textCanvas
-  draw sunBuffer, presentProg
+  drawBuffer sunBuffer, presentProg
 
   if newState > 0
     newState -= 1

@@ -2,7 +2,11 @@
 
 This is a game made for the gamejam over at http://2016.js13kgames.com Compressed in the zip file, the whole thing comes in at just under 13 kilobytes of data!
 
-It was built primarily in coffee-script, using WebGL and WebAudio in the browser. There's a minimal server in the package whose job is to build the project. When run, you can navigate to the root of localhost:8081, and you'll find the game running in a debuggable state, while the packed and minified html and zip files have been refreshed on disk.
+It was built primarily in coffee-script, using WebGL and WebAudio in the browser and node for development.
+
+There is a minimal node server in the package whose job is to build the project. When run, you can navigate to the root of localhost:8081, where you'll find the game running in a debuggable state, while the packed and minified html and zip files have been refreshed on disk. You'll also see a report in the terminal listing the current HTML and ZIP sizes. My process was to have Atom open, with auto saved enabled. I'd make edits, switch to the browser and refresh, grin smugly, then worry about the inexorably ticking upwards package size number in the corner of the screen. `#jamLyfe`
+
+Number one surprising dev thing? 13k is a LOT of room. Most the code was written imperatively with the assumption that I'd quickly run out of space. Hundreds of lines of code later, I have global state variables called just... `'t'`. Welcome to a special edition of hell.
 
 WebGL is basically a dream to work with: pretty much everything worked as I'd imagine it would right out of the box. Performance is still variable, but given the stability of the ES2 standard, the browser meisters can work behind the scenes to keep improving while us devs get to work making content.
 

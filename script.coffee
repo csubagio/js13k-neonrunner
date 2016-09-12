@@ -49,33 +49,69 @@ program = (vertSource, fragSource) ->
   gl.linkProgram prog
   return prog
 
-neon = program "
-    uniform vec3 x;
-    uniform vec3 m;
-    attribute vec3 p;
-    varying vec4 u;
-    void main() {
-      vec3 t=p*0.5+x*2.0;
-      float div=t.z*0.6+0.4;
-      gl_Position=vec4(t.xy-m.xy*div,t.z / 100.0,div);
-      u.xy=p.xy;
-      u.zw=p.xy+x.xy;
-    }
-  ","
-    precision mediump float;
-    varying vec4 u;
-    void main() {
-      vec3 nrm = normalize(vec3(u.xy,1.0));
-      vec3 lig = normalize(vec3(u.zw,1.0));
-      float d=smoothstep(0.3, 0.95, dot(nrm,lig));
-      gl_FragColor.rgb=mix(vec3(0.96,0.8,0.38),vec3(0.54,0.08,0.5),d);
-      gl_FragColor.w=min(1.0,smoothstep(0.85,0.84,length(u.xy))+smoothstep(1.0,0.85,length(u.xy)));
-      gl_FragColor.rgb*=gl_FragColor.w;
-      if(gl_FragColor.a <= 0.0) {
-        discard;
+
+generateSpriteProgram = (fragment) ->
+  program "
+      uniform vec3 x;
+      uniform vec3 m;
+      attribute vec3 p;
+      varying vec4 u;
+      varying vec4 q;
+      void main() {
+        vec3 t=p*0.5+x*2.0;
+        float div=t.z*0.6+0.4;
+        gl_Position=vec4(t.xy-m.xy*div,t.z / 100.0,div);
+        u.xy=p.xy;
+        u.zw=p.xy+x.xy;
+        q.xy=m.xy;
+        q.zw=x.xy;
       }
+    ","
+      precision mediump float;
+      varying vec4 u;
+      varying vec4 q;
+      uniform float t;
+      void main() { #{fragment} }
+    "
+
+ballProg = generateSpriteProgram "
+    vec3 nrm = normalize(vec3(u.xy,1.0));
+    vec3 lig = normalize(vec3(u.zw,1.0));
+    float d=smoothstep(0.3, 0.95, dot(nrm,lig));
+    gl_FragColor.rgb=mix(vec3(0.96,0.8,0.38),vec3(0.54,0.08,0.5),d);
+    gl_FragColor.w=min(1.0,smoothstep(0.85,0.84,length(u.xy))+smoothstep(1.0,0.85,length(u.xy)));
+    gl_FragColor.rgb*=gl_FragColor.w;
+    if(gl_FragColor.a <= 0.0) {
+      discard;
     }
   "
+
+hoopProg = generateSpriteProgram "
+    vec3 nrm = normalize(vec3(u.xy,1.0));
+    vec3 lig = normalize(vec3(u.zw,1.0));
+    float d=smoothstep(0.3, 0.95, dot(nrm,lig));
+    gl_FragColor.rgb=mix(vec3(0.96,0.8,0.38),vec3(0.54,0.08,0.5),d);
+    gl_FragColor.w=sin(smoothstep(0.5,1.0,length(u.xy))*3.14);
+    gl_FragColor.rgb*=gl_FragColor.w;
+    if(gl_FragColor.a <= 0.0) {
+      discard;
+    }
+  "
+
+portProg = generateSpriteProgram "
+    vec2 p=u.xy;
+    float d=1.0-length(p.xy);
+    p+=(-q.xy+q.zw)*(1.0-length(p.xy));
+    gl_FragColor.rgb=mix(vec3(1.2,0.3,0.5),vec3(0.54,0.08,0.5),pow(d,0.2));
+    gl_FragColor.w=smoothstep(-0.5,-0.2,sin(length(p.xy)*3.14*4.0+t*2.0));
+    gl_FragColor.w=min(1.0,gl_FragColor.w+smoothstep(0.75,0.76,1.0-d));
+    gl_FragColor.w*=smoothstep(1.0,0.95,length(p.xy));
+    gl_FragColor.rgb*=gl_FragColor.w;
+    if(gl_FragColor.a <= 0.0) {
+      discard;
+    }
+  "
+
 
 lazerProg = program "
     uniform vec3 x;
@@ -186,16 +222,15 @@ starProg = program "
 
 explodeProg = program "
     attribute vec4 p;
-    uniform vec3 m;
+    uniform vec3 m, x;
     uniform vec2 t;
-    uniform vec3 x;
     varying vec4 u;
     void main(){
       vec3 l;
-      float a = t.y * 7.28;
-      l.x = sin(a) * p.x + cos(a) * p.y * 0.5;
-      l.y = (cos(a) * p.x - sin(a) * p.y * 0.5);
-      l.z = (p.z+0.2) * -15.0 * pow(t.x,1.6);
+      float a=t.y*7.28;
+      l.x=sin(a)*p.x+cos(a)*p.y*0.5;
+      l.y=cos(a)*p.x-sin(a)*p.y*0.5;
+      l.z=(p.z+0.2)*-15.0*pow(t.x,1.6);
       float s=sin(p.z*3.14);
       float d=pow(t.x,0.6)*pow(s,2.0)*7.0;
       l.xy*=d;
@@ -563,7 +598,7 @@ gameStates =
   freePlay: 2
   tutorial: 3
 
-gameState = gameStates.freePlay
+gameState = gameStates.pressStart
 newState = true
 stateData = {}
 
@@ -645,7 +680,7 @@ updateTargets = ->
     tg.x += 0.1 * dx
     tg.y += 0.1 * dy
     tg.z += 0.1 * dz
-    drawBuffer quadBuffer, neon, tg.x, tg.y, tg.z
+    drawBuffer quadBuffer, ballProg, tg.x, tg.y, tg.z
     for bl in bullets
       dx = bl.x - tg.x
       dy = bl.y - tg.y
@@ -668,7 +703,7 @@ drawGame = ->
     i.z += 1
   gl.depthMask true
 
-  drawBuffer quadBuffer, neon, playerX, playerY, playerZ
+  drawBuffer quadBuffer, ballProg, playerX, playerY, playerZ
 
 particles = []
 
@@ -718,7 +753,7 @@ frame = ->
         note = notes[noteName]
         res.push noteName
         if note?
-          octave = [0.5, 0.25, 0.125, 0.125/2.0][i]
+          octave = [(if bar.length == 4 then 0.5 else 1.0), 0.25, 0.125, 0.125/2.0][i]
           try
             inst.gain.gain.setValueCurveAtTime inst.gcurve, audioContext.currentTime + 0.01, 0.1
             inst.osc.frequency.linearRampToValueAtTime note * octave, audioContext.currentTime + 0.05
@@ -762,10 +797,10 @@ frame = ->
         setState gameStates.intro
 
       for i in [0..12]
-        drawBuffer quadBuffer, neon, 0 + sin(t*0.1+i), -1 + abs(sin(t*0.1+i*0.5)), 12.4-i
-        drawBuffer quadBuffer, neon, 0 - sin(t*0.1+i), -1, 12.4-i
+        drawBuffer quadBuffer, ballProg, 0 + sin(t*0.1+i), -1 + abs(sin(t*0.1+i*0.5)), 12.4-i
+        drawBuffer quadBuffer, ballProg, 0 - sin(t*0.1+i), -1, 12.4-i
 
-      drawBuffer quadBuffer, neon, 0, 0.7, 0.4
+      drawBuffer quadBuffer, ballProg, 0, 0.7, 0.4
 
     when gameStates.intro
       if newState

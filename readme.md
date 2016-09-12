@@ -1,4 +1,4 @@
-![](./neon-runner-logo.gif')
+![](neon-runner-logo.gif')
 
 # Neon Runner '84
 

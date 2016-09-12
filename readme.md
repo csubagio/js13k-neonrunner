@@ -18,4 +18,4 @@ If you're lucky, Chrome will still playback the sound in this game the way I aut
 
 Otherwise though, this was a *TON* of fun, and I'd recommend the jam to anyone who's into game development. Here's to JS13k 2017!
 
-*Note hilarious irony: the promo gif above is **7 Mb**, over 500 times the size of the game ¯\_(ツ)_/¯*
+*Note hilarious irony: the promo gif above is * **7 Mb** *, over 500 times the size of the game ¯\\_(ツ)_/¯*

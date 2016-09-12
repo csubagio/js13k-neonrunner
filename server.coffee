@@ -36,6 +36,7 @@ server = http.createServer (req, res) ->
   data.js = data.ugly
   html = template data
   fs.writeFileSync 'neonrunner84.html', html, 'utf8'
+  fs.writeFileSync 'index.html', html, 'utf8'
 
   htmlFile = fs.openSync 'neonrunner84.html', 'r'
   stat = fs.fstatSync htmlFile

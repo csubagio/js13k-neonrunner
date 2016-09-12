@@ -1,4 +1,4 @@
-[['https://raw.githubusercontent.com/csubagio/js13k-neonrunner/master/neon-runner-logo.gif']]
+!()[./neon-runner-logo.gif']
 
 # Neon Runner '84
 

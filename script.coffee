@@ -417,7 +417,6 @@ for s in [['#000853', 0.1],['#4a50b9', 0.3],['#cae2fa',0.53],['#120d13',0.55],['
 for s in [['#18161c',1], ['#424281',0.5], ['#a2b2d6',0]]
   inverseTextGradient.addColorStop s[1],s[0]
 
-score = 0
 fireCooldown = 0
 
 bullets = for i in [0..20]
@@ -589,7 +588,6 @@ noteCount = 0
 beatDuration = 14
 
 targets = []
-wave = 0
 
 
 gameStates =
@@ -674,6 +672,9 @@ fireWeapons = ->
 
 updateTargets = ->
   for tg in targets
+    tg.time ?= 0
+    tg.time += 0.016
+    tg.tick.call tg if tg.tick?
     dx = tg.px - tg.x
     dy = tg.py - tg.y
     dz = tg.pz - tg.z
@@ -688,7 +689,7 @@ updateTargets = ->
       if abs(dx) < 0.25 and abs(dy) < 0.25 and dz > 0 and dz <= 3
         tg.dead = true
         particle tg.x, tg.y, tg.z, 0.7, explodeProg
-        score += 10
+        tg.die.call tg if tg.die?
 
   targets = (tg for tg in targets when not tg.dead)
 
@@ -790,7 +791,7 @@ frame = ->
 
       playerX = lerp playerX, -0.1, 0.1
       playerY = lerp playerY, 0.6, 0.1
-      print viewportWidth/2, viewportWidth-textSize*2.2, pow(abs(sin(t*0.32)),4) * 2, "PRESS SPACE"
+      print viewportWidth/2, viewportWidth-textSize*2.2, min(1,pow(abs(sin(t*0.32)),4)*2), "PRESS SPACE"
       print viewportWidth/2 + sin(t*0.06)*20, viewportWidth*0.16 + sin(t*0.12)*10, 1, "NEON"
       print viewportWidth/2 + sin(t*0.06+0.7)*20, viewportWidth*0.16 + textSize*0.8 + sin(t*0.12+0.5)*10, 1, "RUNNER '84"
       if bounced.fire
@@ -891,7 +892,8 @@ frame = ->
               for i in [0...stateData.count]
                 targets.push { x: -30, y: -10, z:30, px: -1 + 2 * random(), py: -1 + 2 * random(), pz: 4 }
         when 8
-          if stateData.jumpReady then setState gameStates.freePlay
+          #if stateData.jumpReady then setState gameStates.freePlay
+          setState gameStates.freePlay
 
       movePlayer()
       if stateData.step >= 4
@@ -900,19 +902,52 @@ frame = ->
       drawGame()
 
     when gameStates.freePlay
+      if newState
+        stateData.score = 0
+        stateData.time = 300
+        stateData.wave = 1
+
+      doneDialog = runDialog()
+
+      stateData.time += 1
+      if stateData.time >= 300
+        resetDialog [ "jam end, freeplay mode" ]
+        stateData.time = 0
+
       if targets.length == 0
-        wave += 1
-        switch wave
-          when 1
-            targets.push { x: -30, y: -10, z:30, px: 0, py: 0.5, pz: 4 }
-          else
+        stateData.wave += 1
+        switch
+          when stateData.wave < 5
+            targets.push { x: -30, y: -10, z:30, px: 0, py: 0.5, pz: 4, die: -> stateData.score += 5 }
+          when stateData.wave < 15
             for i in [0...3]
-              targets.push { x: -30, y: -10, z:30, px: -1 + 2 * random(), py: -1 + 2 * random(), pz: 4 }
+              targets.push {
+                x: -30, y: -10, z:30,
+                px: 0, py: 0, pz: 4, d: 0.3 + random() * 0.7, a: random() * 3.14, s: 0.5 + 2.0 * random()
+                die: -> stateData.score += 10
+                tick: ->
+                  a = @time * @s + @a
+                  @px = ( sin(a) + cos(a) ) * @d
+                  @py = ( cos(a) - sin(a) ) * @d
+              }
+          else
+            for i in [0...5]
+              targets.push {
+                x: -30, y: -10, z:30,
+                px: 0, py: 0, pz: 4, d: 0.3 + random() * 0.7, a: random() * 3.14, s: 0.5 + 2.0 * random()
+                die: -> stateData.score += 10
+                tick: ->
+                  a = @time * @s + @a
+                  @px = ( sin(a) + cos(a) ) * @d
+                  @py = ( cos(a) - sin(a) ) * @d
+              }
 
       movePlayer()
       fireWeapons()
       updateTargets()
       drawGame()
+
+      print viewportWidth/2, viewportWidth*0.02, 1, "" + stateData.score
 
   ###
   if particles.length == 0

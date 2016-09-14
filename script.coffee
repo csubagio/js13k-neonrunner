@@ -370,6 +370,9 @@ bounced =
 updatePaused = false
 musicMuted = true
 
+if /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor)
+  musicMuted = false
+
 keys = (e, val) ->
   switch e.keyCode
     when 38 then buttons.up = val
@@ -548,6 +551,9 @@ playerPewInstrument = createInstrument 'triangle', 'sawtooth', 100, 30
 pewFrequency = f32 [1200, 500, 150, 100, 50]
 pewGain = f32 [0.2, 0.1, 0.05, 0.02, 0.0001]
 
+explodeInstrument = createInstrument 'sawtooth', 'square', 100, 15
+explodeInstrument.fcurve = f32 [1000, 400, 150, 100, 50, 30]
+explodeInstrument.gcurve = f32 [0,0.55, 0.1, 0.03, 0.03, 0.03, 0.03, 0.01, 0]
 
 noteTimer = 1000
 bar = []
@@ -577,7 +583,6 @@ introDialog = [
   "Never mind, we've had a firewall breach and you're the only one in there"
   "I need you to find the malicious software and neutralize it"
   "This is not an optional job. I'm firing up calibration protocol 9"
-  "Be ready"
 ]
 
 
@@ -690,6 +695,14 @@ updateTargets = ->
         tg.dead = true
         particle tg.x, tg.y, tg.z, 0.7, explodeProg
         tg.die.call tg if tg.die?
+
+        try
+          explodeInstrument.osc.frequency.cancelScheduledValues audioContext.currentTime
+          explodeInstrument.osc.frequency.setValueCurveAtTime explodeInstrument.fcurve, audioContext.currentTime, 3
+          explodeInstrument.gain.gain.cancelScheduledValues audioContext.currentTime
+          explodeInstrument.gain.gain.setValueCurveAtTime explodeInstrument.gcurve, audioContext.currentTime, 3
+        break
+
 
   targets = (tg for tg in targets when not tg.dead)
 
@@ -905,7 +918,7 @@ frame = ->
       if newState
         stateData.score = 0
         stateData.time = 300
-        stateData.wave = 1
+        stateData.wave = 0
 
       doneDialog = runDialog()
 
@@ -930,8 +943,9 @@ frame = ->
                   @px = ( sin(a) + cos(a) ) * @d
                   @py = ( cos(a) - sin(a) ) * @d
               }
-          else
-            for i in [0...5]
+          when stateData.wave < 25
+            fireDelay = 10
+            for i in [0...3]
               targets.push {
                 x: -30, y: -10, z:30,
                 px: 0, py: 0, pz: 4, d: 0.3 + random() * 0.7, a: random() * 3.14, s: 0.5 + 2.0 * random()
@@ -939,7 +953,23 @@ frame = ->
                 tick: ->
                   a = @time * @s + @a
                   @px = ( sin(a) + cos(a) ) * @d
-                  @py = ( cos(a) - sin(a) ) * @d
+                  @py = sin(a)
+              }
+          else
+            fireDelay = 5
+            for i in [0...5]
+              targets.push {
+                x: -30, y: -10, z:30,
+                px: 0, py: 0, pz: 4, d: 0.7 + random() * 0.3, a: random() * 3.14, s: 1 + 3.0 * random() * sign(random()-0.5)
+                q: random(), r: -1 + 2 * random(), h: random(), i: random()
+                die: -> stateData.score += 10
+                tick: ->
+                  a = @time * @s + @a
+                  @px = ( sin(a) * @q + cos(a) ) * @d
+                  a *= @h
+                  @py = ( cos(a) - sin(a) ) * @d * @i
+                  @py = worldClamp @py + @r;
+
               }
 
       movePlayer()
